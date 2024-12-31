@@ -2,6 +2,7 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProductDto } from './dtos/create-product.dto';
 import { Product } from '../product/entities/product-entities';
+import { EventPattern, Payload } from '@nestjs/microservices';
 
 @Injectable()
 export class ProductService {
@@ -18,8 +19,8 @@ export class ProductService {
     }
   }
   
-
-  async createProduct(createProductDto: CreateProductDto): Promise<Product> {
+  @EventPattern('product_created') //listen to event 'product_created' from the Publisher product service
+  async createProduct(@Payload() createProductDto: CreateProductDto): Promise<Product> {
     const { name, price, description, image } = createProductDto;
 
     try {
