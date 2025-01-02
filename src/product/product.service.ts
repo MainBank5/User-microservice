@@ -8,16 +8,25 @@ import { EventPattern, Payload } from '@nestjs/microservices';
 export class ProductService {
   constructor(private readonly _prisma: PrismaService) {}
 
-  async getAllProducts(): Promise<Product[]> {
-    try {
-      const products = await this._prisma.product.findMany();
-      console.log('Fetched products:', products);
-      return products;
-    } catch (error) {
-      console.error('Error fetching products:', error);
-      throw new BadRequestException('An error occurred while fetching products.');
-    }
+  @EventPattern('product.get.all') // Listen to the 'product.get.all' event
+async getAllProducts(@Payload() data: any): Promise<Product[]> {
+  try {
+    // Log the data received from RabbitMQ
+    console.log('Received data from RabbitMQ:', data); // This will show "Hello from RabbitMQ"
+
+    // Fetch products from the database
+    const products = await this._prisma.product.findMany();
+    console.log('Fetched products:', products);
+
+    return products;
+  } catch (error) {
+    console.error('Error fetching products:', error);
+    throw new BadRequestException(
+      'An error occurred while fetching products.',
+    );
   }
+}
+
   
   @EventPattern('product_created') //listen to event 'product_created' from the Publisher product service
   async createProduct(@Payload() createProductDto: CreateProductDto): Promise<Product> {
@@ -47,9 +56,10 @@ export class ProductService {
   async getProductById(id: string): Promise<Product> {
     return this._prisma.product.findUnique({ where: { id } });
   }
+  @EventPattern('product.updated') //listen to event 'product_updated' from the Publisher product service
   async updateProduct(
     id: string,
-    createProductDto: CreateProductDto,
+    @Payload() createProductDto: CreateProductDto,
   ): Promise<Product> {
     const { name, price, description, image } = createProductDto;
     try {
@@ -69,12 +79,14 @@ export class ProductService {
       );
     }
   }
+
+  @EventPattern('product.deleted') //listen to event 'product_deleted' from the Publisher product service
   async deleteProduct(
-    id: string,
+    @Payload() deletedProductPayload: { id: string },
   ): Promise<{ message: string; deletedProduct: Product }> {
     try {
       const deletedProduct = await this._prisma.product.delete({
-        where: { id },
+        where: { id: deletedProductPayload.id },
       });
       return {
         message: 'Product deleted successfully',

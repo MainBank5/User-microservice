@@ -26,7 +26,7 @@ const app = await NestFactory.createMicroservice<MicroserviceOptions>(AppModule,
 });
 app.useGlobalPipes(new ValidationPipe());
 app.listen()
-.then(() => console.log('Microservice is listening'));
+.then(() => console.log('Microservice is listening!!'));
 
 }
 bootstrap();
